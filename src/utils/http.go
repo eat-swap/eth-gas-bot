@@ -15,9 +15,11 @@ func HttpRequest(method, url string, data []byte, headers map[string][]string) (
 		return nil, err
 	}
 
-	for k, v := range headers {
-		for _, e := range v {
-			req.Header.Add(k, e)
+	if headers != nil {
+		for k, v := range headers {
+			for _, e := range v {
+				req.Header.Add(k, e)
+			}
 		}
 	}
 
@@ -44,4 +46,22 @@ func HttpPost(url string, data []byte, headers map[string][]string) ([]byte, err
 
 func HttpGet(url string, headers map[string][]string) ([]byte, error) {
 	return HttpRequest("GET", url, nil, headers)
+}
+
+func HttpGetWithMultiParams(url string, headers, params map[string][]string) ([]byte, error) {
+	url = url + "?"
+	for k, v := range params {
+		for _, e := range v {
+			url = url + k + "=" + e + "&"
+		}
+	}
+	return HttpGet(url, headers)
+}
+
+func HttpGetWithParams(url string, headers map[string][]string, params map[string]string) ([]byte, error) {
+	url = url + "?"
+	for k, v := range params {
+		url = url + k + "=" + v + "&"
+	}
+	return HttpGet(url[:len(url)-1], headers)
 }

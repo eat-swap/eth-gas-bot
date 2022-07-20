@@ -15,7 +15,7 @@ type GasInfoResult struct {
 	GasUsedRatio    string `json:"gasUsedRatio"`
 }
 
-func (t *GasInfoResult) toGas() (*models.Gas, error) {
+func (t *GasInfoResult) ToGas() (*models.Gas, error) {
 	lastBlock, err := strconv.ParseInt(t.LastBlock, 10, 64)
 	if err != nil {
 		return nil, err

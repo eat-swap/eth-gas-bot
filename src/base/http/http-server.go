@@ -11,6 +11,7 @@ var (
 
 func RegisterRouter() {
 	Router = gin.Default()
+	Router.TrustedPlatform = gin.PlatformCloudflare
 }
 
 func RunServer() {

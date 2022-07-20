@@ -13,7 +13,7 @@ type EthPriceResult struct {
 	EthUsdTimestamp string `json:"ethusd_timestamp"`
 }
 
-func (t *EthPriceResult) toPrice() (*models.Price, error) {
+func (t *EthPriceResult) ToPrice() (*models.Price, error) {
 	btc, err := strconv.ParseFloat(t.EthBtc, 64)
 	if err != nil {
 		return nil, err
