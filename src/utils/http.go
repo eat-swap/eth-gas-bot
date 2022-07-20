@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -32,11 +33,15 @@ func HttpRequest(method, url string, data []byte, headers map[string][]string) (
 	}
 
 	if resp.StatusCode >= 300 {
-		return nil, err
+		return nil, fmt.Errorf("non 2xx status: %s", resp.Status)
 	}
 	return body, nil
 }
 
 func HttpPost(url string, data []byte, headers map[string][]string) ([]byte, error) {
 	return HttpRequest("POST", url, data, headers)
+}
+
+func HttpGet(url string, headers map[string][]string) ([]byte, error) {
+	return HttpRequest("GET", url, nil, headers)
 }
