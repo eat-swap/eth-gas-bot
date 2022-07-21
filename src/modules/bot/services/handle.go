@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"log"
+	"math"
 	"time"
 )
 
@@ -29,11 +30,33 @@ func HandleIncomingMessage(message *entities.Message, ctx *gin.Context) {
 
 func sendGasInfo(message *entities.Message) {
 	gas := global.GetCurrentGas()
+	historyGas := global.GetHistoryGas()
+	maxCount := []float64{20, 240, 1440, 5760}
 
-	text := fmt.Sprintf("Base gas price: <b>%.6f</b>\n", gas.Gas.SuggestBaseFee)
-	text += fmt.Sprintf("Low: <b>%d</b>\n", gas.Gas.SafeGasPrice)
-	text += fmt.Sprintf("Avg: <b>%d</b>\n", gas.Gas.ProposeGasPrice)
-	text += fmt.Sprintf("High: <b>%d</b>\n", gas.Gas.FastGasPrice)
+	text := fmt.Sprintf("Base gas price: <b>%.6f", gas.Gas.SuggestBaseFee)
+	for i, v := range historyGas {
+		text += fmt.Sprintf("/%.3f", v.Base/math.Min(float64(v.Count), maxCount[i]))
+	}
+	text += "</b>\n"
+
+	text += fmt.Sprintf("Low: <b>%d", gas.Gas.SafeGasPrice)
+	for i, v := range historyGas {
+		text += fmt.Sprintf("/%.3f", v.Low/math.Min(float64(v.Count), maxCount[i]))
+	}
+	text += "</b>\n"
+
+	text += fmt.Sprintf("Avg: <b>%d", gas.Gas.ProposeGasPrice)
+	for i, v := range historyGas {
+		text += fmt.Sprintf("/%.3f", v.Avg/math.Min(float64(v.Count), maxCount[i]))
+	}
+	text += "</b>\n"
+
+	text += fmt.Sprintf("High: <b>%d", gas.Gas.FastGasPrice)
+	for i, v := range historyGas {
+		text += fmt.Sprintf("/%.3f", v.High/math.Min(float64(v.Count), maxCount[i]))
+	}
+	text += "</b>\n"
+	text += "(Current/5 Minutes/1 Hour/6 Hours/24 Hours)"
 
 	text += appendTimestamp(&gas.ObtainedAt)
 
@@ -49,7 +72,14 @@ func sendGasInfo(message *entities.Message) {
 
 func sendPriceInfo(message *entities.Message) {
 	price := global.GetCurrentPrice()
+	historyPrice := global.GetHistoryPrice()
+
 	text := fmt.Sprintf("Current Ethereum price: <b>%.3f</b>", price.Price.Usd)
+	text += fmt.Sprintf("5 Minutes Average: <b>%.3f</b>", historyPrice[0])
+	text += fmt.Sprintf("1 Hour Average: <b>%.3f</b>", historyPrice[1])
+	text += fmt.Sprintf("6 Hours Average: <b>%.3f</b>", historyPrice[2])
+	text += fmt.Sprintf("24 Hours Average: <b>%.3f</b>", historyPrice[3])
+
 	text += appendTimestamp(&price.Price.UsdTimestamp)
 
 	r, err := services.SendMessage(config.TelegramBotToken, &params.SendMessageParams{
@@ -87,9 +117,9 @@ func sendError(message *entities.Message) {
 }
 
 func appendTimestamp(obtained *time.Time) string {
-	return fmt.Sprintf("\n\nServer time: %s\nData time: %s\nNext update: %s",
-		time.Now().Format(time.RFC1123),
-		obtained.Format(time.RFC1123),
-		global.NextUpdate.Format(time.RFC1123),
+	return fmt.Sprintf("\n\nServer time: <b>%s</b>\nData time: <b>%s</b>\nNext update: <b>%s</b>",
+		time.Now().Format("15:04:05.000"),
+		obtained.Format("15:04:05.000"),
+		global.NextUpdate.Format("15:04:05.000"),
 	)
 }

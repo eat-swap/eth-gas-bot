@@ -10,3 +10,11 @@ type GasInfo struct {
 	Gas        *models.Gas `json:"gas,omitempty"`
 	ObtainedAt time.Time   `json:"obtained_at,omitempty"`
 }
+
+type HistoricalGas struct {
+	Base  float64
+	Low   float64
+	Avg   float64
+	High  float64
+	Count uint64
+}
