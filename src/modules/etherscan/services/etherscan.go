@@ -6,6 +6,7 @@ import (
 	"eth-gas-bot/modules/etherscan/models"
 	"eth-gas-bot/modules/etherscan/models/response"
 	"eth-gas-bot/utils"
+	"fmt"
 )
 
 const (
@@ -45,6 +46,7 @@ func GetPrice() (*models.Price, error) {
 	price := &response.GeneralResponse[response.EthPriceResult]{}
 	err = json.Unmarshal(resp, price)
 	if err != nil {
+		fmt.Println(string(resp))
 		return nil, err
 	}
 
