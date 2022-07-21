@@ -1,4 +1,4 @@
-package models
+package entities
 
 type Update struct {
 	UpdateId          int64    `json:"update_id"`

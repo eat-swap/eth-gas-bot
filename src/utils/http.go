@@ -35,7 +35,7 @@ func HttpRequest(method, url string, data []byte, headers map[string][]string) (
 	}
 
 	if resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("non 2xx status: %s", resp.Status)
+		return body, fmt.Errorf("non 2xx status: %s", resp.Status)
 	}
 	return body, nil
 }
