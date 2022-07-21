@@ -10,7 +10,6 @@ import (
 
 func SendMessage(token string, params *params.SendMessageParams) (ret *entities.Message, err error) {
 	resp, err := GenericCall(token, "/sendMessage", params)
-	fmt.Println(string(resp))
 	var r models.Response[entities.Message]
 	err = json.Unmarshal(resp, &r)
 	if err != nil {

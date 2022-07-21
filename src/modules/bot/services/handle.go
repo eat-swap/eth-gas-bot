@@ -6,6 +6,7 @@ import (
 	"eth-gas-bot/modules/telegram/models/entities"
 	"eth-gas-bot/modules/telegram/models/params"
 	"eth-gas-bot/modules/telegram/services"
+	"eth-gas-bot/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -28,8 +29,13 @@ func HandleIncomingMessage(message *entities.Message, ctx *gin.Context) {
 
 func sendGasInfo(message *entities.Message) {
 	gas := global.GetCurrentGas()
-	text := fmt.Sprintf("The current gas price is <b>%.6f</b>", gas.Gas.SuggestBaseFee)
-	text = appendTimestamp(text, &gas.ObtainedAt)
+
+	text := fmt.Sprintf("Base gas price: <b>%.6f</b>\n", gas.Gas.SuggestBaseFee)
+	text += fmt.Sprintf("Low: <b>%d</b>\n", gas.Gas.SafeGasPrice)
+	text += fmt.Sprintf("Avg: <b>%d</b>\n", gas.Gas.ProposeGasPrice)
+	text += fmt.Sprintf("High: <b>%d</b>\n", gas.Gas.FastGasPrice)
+
+	text += appendTimestamp(&gas.ObtainedAt)
 
 	r, err := services.SendMessage(config.TelegramBotToken, &params.SendMessageParams{
 		ChatId:    message.Chat.Id,
@@ -43,8 +49,8 @@ func sendGasInfo(message *entities.Message) {
 
 func sendPriceInfo(message *entities.Message) {
 	price := global.GetCurrentPrice()
-	text := fmt.Sprintf("The current Ethereum price is <b>%.3f</b>", price.Price.Usd)
-	text = appendTimestamp(text, &price.Price.UsdTimestamp)
+	text := fmt.Sprintf("Current Ethereum price: <b>%.3f</b>", price.Price.Usd)
+	text += appendTimestamp(&price.Price.UsdTimestamp)
 
 	r, err := services.SendMessage(config.TelegramBotToken, &params.SendMessageParams{
 		ChatId:    message.Chat.Id,
@@ -59,7 +65,7 @@ func sendPriceInfo(message *entities.Message) {
 func sendHelp(message *entities.Message) {
 	r, err := services.SendMessage(config.TelegramBotToken, &params.SendMessageParams{
 		ChatId:    message.Chat.Id,
-		Text:      DefaultMessage,
+		Text:      fmt.Sprintf(DefaultMessage, utils.WrapForMarkdown(message.Chat.FirstName)),
 		ParseMode: params.MessageParseModeMarkdown,
 	})
 	if err != nil || r == nil {
@@ -80,9 +86,8 @@ func sendError(message *entities.Message) {
 	}
 }
 
-func appendTimestamp(text string, obtained *time.Time) string {
-	return fmt.Sprintf("%s\nServer time: %s\nData time: %s\nNext update: %s",
-		text,
+func appendTimestamp(obtained *time.Time) string {
+	return fmt.Sprintf("\n\nServer time: %s\nData time: %s\nNext update: %s",
 		time.Now().Format(time.RFC1123),
 		obtained.Format(time.RFC1123),
 		global.NextUpdate.Format(time.RFC1123),
