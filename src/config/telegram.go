@@ -2,6 +2,10 @@ package config
 
 import "os"
 
+const (
+	WebhookEntry = "/TQbqEEX9"
+)
+
 var (
 	TelegramBotToken string
 	TelegramApiRoot  string

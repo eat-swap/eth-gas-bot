@@ -9,3 +9,14 @@ type Update struct {
 
 	// Fancy types Not implemented yet
 }
+
+func (u *Update) ExtractMessage() *Message {
+	if u.Message != nil {
+		return u.Message
+	} else if u.EditedMessage != nil {
+		return u.EditedMessage
+	} else if u.ChannelPost != nil {
+		return u.ChannelPost
+	}
+	return u.EditedChannelPost
+}
