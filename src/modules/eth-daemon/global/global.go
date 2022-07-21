@@ -22,6 +22,8 @@ var (
 	GasHead           = 0
 	GasMutex          = &sync.RWMutex{}
 	GasCounter uint64 = 0
+
+	NextUpdate time.Time
 )
 
 func GetCurrentGas() models.GasInfo {

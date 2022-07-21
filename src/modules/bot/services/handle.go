@@ -29,6 +29,7 @@ func HandleIncomingMessage(message *entities.Message, ctx *gin.Context) {
 func sendGasInfo(message *entities.Message) {
 	gas := global.GetCurrentGas()
 	text := fmt.Sprintf("The current gas price is <b>%.6f</b>", gas.Gas.SuggestBaseFee)
+	text = appendTimestamp(text, &gas.ObtainedAt)
 
 	r, err := services.SendMessage(config.TelegramBotToken, &params.SendMessageParams{
 		ChatId:    message.Chat.Id,
@@ -42,9 +43,12 @@ func sendGasInfo(message *entities.Message) {
 
 func sendPriceInfo(message *entities.Message) {
 	price := global.GetCurrentPrice()
+	text := fmt.Sprintf("The current Ethereum price is <b>%.3f</b>", price.Price.Usd)
+	text = appendTimestamp(text, &price.Price.UsdTimestamp)
+
 	r, err := services.SendMessage(config.TelegramBotToken, &params.SendMessageParams{
 		ChatId:    message.Chat.Id,
-		Text:      fmt.Sprintf("The current Ethereum price is <b>%.3f</b>", price.Price.Usd),
+		Text:      text,
 		ParseMode: params.MessageParseModeHTML,
 	})
 	if err != nil || r == nil {
@@ -77,5 +81,10 @@ func sendError(message *entities.Message) {
 }
 
 func appendTimestamp(text string, obtained *time.Time) string {
-	return fmt.Sprintf("%s\nServer time: %s\nData time: %s\n", text, time.Now().Format(time.RFC1123))
+	return fmt.Sprintf("%s\nServer time: %s\nData time: %s\nNext update: %s",
+		text,
+		time.Now().Format(time.RFC1123),
+		obtained.Format(time.RFC1123),
+		global.NextUpdate.Format(time.RFC1123),
+	)
 }

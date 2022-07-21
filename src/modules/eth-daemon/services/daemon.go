@@ -12,7 +12,8 @@ func Daemon() {
 	for {
 		go gas()
 		go price()
-		log.Printf("Next scheduled update at %s", time.Now().Add(global.RefreshInterval).Format(time.RFC1123))
+		global.NextUpdate = time.Now().Add(global.RefreshInterval)
+		log.Printf("Next scheduled update at %s", global.NextUpdate.Format(time.RFC1123))
 		time.Sleep(global.RefreshInterval)
 	}
 }
