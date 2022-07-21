@@ -132,6 +132,7 @@ func price() {
 	if global.PriceCounter > 5760 {
 		global.AvgPrice24h -= global.HistoryPrice[(global.PriceHead+global.CacheLimit-5760)%global.CacheLimit].Price.Usd
 	}
+	global.AvgPriceMutex.Unlock()
 
 	// Print price info
 	log.Printf("Successfully obtained price info. Price: %.3f", price.Usd)

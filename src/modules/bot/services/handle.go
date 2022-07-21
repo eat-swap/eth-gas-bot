@@ -74,11 +74,11 @@ func sendPriceInfo(message *entities.Message) {
 	price := global.GetCurrentPrice()
 	historyPrice := global.GetHistoryPrice()
 
-	text := fmt.Sprintf("Current Ethereum price: <b>%.3f</b>", price.Price.Usd)
-	text += fmt.Sprintf("5 Minutes Average: <b>%.3f</b>", historyPrice[0])
-	text += fmt.Sprintf("1 Hour Average: <b>%.3f</b>", historyPrice[1])
-	text += fmt.Sprintf("6 Hours Average: <b>%.3f</b>", historyPrice[2])
-	text += fmt.Sprintf("24 Hours Average: <b>%.3f</b>", historyPrice[3])
+	text := fmt.Sprintf("Current Ethereum price: <b>%.3f</b>\n", price.Price.Usd)
+	text += fmt.Sprintf("5 Minutes Average: <b>%.3f</b>\n", historyPrice[0])
+	text += fmt.Sprintf("1 Hour Average: <b>%.3f</b>\n", historyPrice[1])
+	text += fmt.Sprintf("6 Hours Average: <b>%.3f</b>\n", historyPrice[2])
+	text += fmt.Sprintf("24 Hours Average: <b>%.3f</b>\n", historyPrice[3])
 
 	text += appendTimestamp(&price.Price.UsdTimestamp)
 
