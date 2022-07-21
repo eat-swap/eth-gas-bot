@@ -30,40 +30,65 @@ func HandleIncomingMessage(message *entities.Message, ctx *gin.Context) {
 
 func sendGasInfo(message *entities.Message) {
 	gas := global.GetCurrentGas()
+	price := global.GetCurrentPrice().Price.Usd
 	historyGas := global.GetHistoryGas()
 	maxCount := []float64{20, 240, 1440, 5760}
-
-	text := fmt.Sprintf("Base gas price: <b>%.6f", gas.Gas.SuggestBaseFee)
-	for i, v := range historyGas {
-		text += fmt.Sprintf("/%.3f", v.Base/math.Min(float64(v.Count), maxCount[i]))
+	estimateMap := map[string]float64{
+		"Transfer ETH":     21000,
+		"Transfer USDT":    54128,
+		"Uniswap V2: Swap": 152809,
 	}
-	text += "</b>\n"
 
-	text += fmt.Sprintf("Low: <b>%d", gas.Gas.SafeGasPrice)
-	for i, v := range historyGas {
-		text += fmt.Sprintf("/%.3f", v.Low/math.Min(float64(v.Count), maxCount[i]))
-	}
-	text += "</b>\n"
+	var text string
 
-	text += fmt.Sprintf("Avg: <b>%d", gas.Gas.ProposeGasPrice)
+	text += fmt.Sprintf("`%3d", gas.Gas.SafeGasPrice)
 	for i, v := range historyGas {
-		text += fmt.Sprintf("/%.3f", v.Avg/math.Min(float64(v.Count), maxCount[i]))
+		if i == 0 {
+			text += fmt.Sprintf(" | %.2f", v.Low/math.Min(float64(v.Count), maxCount[i]))
+		} else {
+			text += fmt.Sprintf(" | %.3f", v.Low/math.Min(float64(v.Count), maxCount[i]))
+		}
 	}
-	text += "</b>\n"
+	text += "`  _Low_\n"
 
-	text += fmt.Sprintf("High: <b>%d", gas.Gas.FastGasPrice)
+	text += fmt.Sprintf("`%3d", gas.Gas.ProposeGasPrice)
 	for i, v := range historyGas {
-		text += fmt.Sprintf("/%.3f", v.High/math.Min(float64(v.Count), maxCount[i]))
+		if i == 0 {
+			text += fmt.Sprintf(" | %.2f", v.Avg/math.Min(float64(v.Count), maxCount[i]))
+		} else {
+			text += fmt.Sprintf(" | %.3f", v.Avg/math.Min(float64(v.Count), maxCount[i]))
+		}
 	}
-	text += "</b>\n"
-	text += "(Current/5 Minutes/1 Hour/6 Hours/24 Hours)"
+	text += "`  _Avg_\n"
+
+	text += fmt.Sprintf("`%3d", gas.Gas.FastGasPrice)
+	for i, v := range historyGas {
+		if i == 0 {
+			text += fmt.Sprintf(" | %.2f", v.High/math.Min(float64(v.Count), maxCount[i]))
+		} else {
+			text += fmt.Sprintf(" | %.3f", v.High/math.Min(float64(v.Count), maxCount[i]))
+		}
+	}
+	text += "`  _High_\n"
+
+	text += "Current | 5 Minutes | 1 Hour | 6 Hours | 24 Hours\n"
+
+	text += fmt.Sprintf("`%.6f", gas.Gas.SuggestBaseFee)
+	for i, v := range historyGas {
+		text += fmt.Sprintf(" | %.3f", v.Base/math.Min(float64(v.Count), maxCount[i]))
+	}
+	text += "`  Base\n\nEstimated transaction fees:\n"
+
+	for k, v := range estimateMap {
+		text += fmt.Sprintf("`$%6.3f | $%6.3f | $%6.3f`  %s\n", float64(gas.Gas.SafeGasPrice)*v*1e-9*price, float64(gas.Gas.ProposeGasPrice)*v*1e-9*price, float64(gas.Gas.FastGasPrice)*v*1e-9*price, k)
+	}
 
 	text += appendTimestamp(&gas.ObtainedAt)
 
 	r, err := services.SendMessage(config.TelegramBotToken, &params.SendMessageParams{
 		ChatId:    message.Chat.Id,
-		Text:      text,
-		ParseMode: params.MessageParseModeHTML,
+		Text:      utils.WrapForMarkdownWorse(text),
+		ParseMode: params.MessageParseModeMarkdown,
 	})
 	if err != nil || r == nil {
 		log.Printf("Error sending message: %s", err)
@@ -74,18 +99,18 @@ func sendPriceInfo(message *entities.Message) {
 	price := global.GetCurrentPrice()
 	historyPrice := global.GetHistoryPrice()
 
-	text := fmt.Sprintf("Current Ethereum price: <b>%.3f</b>\n", price.Price.Usd)
-	text += fmt.Sprintf("5 Minutes Average: <b>%.3f</b>\n", historyPrice[0])
-	text += fmt.Sprintf("1 Hour Average: <b>%.3f</b>\n", historyPrice[1])
-	text += fmt.Sprintf("6 Hours Average: <b>%.3f</b>\n", historyPrice[2])
-	text += fmt.Sprintf("24 Hours Average: <b>%.3f</b>\n", historyPrice[3])
+	text := fmt.Sprintf("`%.3f`  Current Ethereum price\n", price.Price.Usd)
+	text += fmt.Sprintf("`%.3f`  5 Minutes Average\n", historyPrice[0])
+	text += fmt.Sprintf("`%.3f`  1 Hour Average\n", historyPrice[1])
+	text += fmt.Sprintf("`%.3f`  6 Hours Average\n", historyPrice[2])
+	text += fmt.Sprintf("`%.3f`  24 Hours Average\n", historyPrice[3])
 
 	text += appendTimestamp(&price.Price.UsdTimestamp)
 
 	r, err := services.SendMessage(config.TelegramBotToken, &params.SendMessageParams{
 		ChatId:    message.Chat.Id,
-		Text:      text,
-		ParseMode: params.MessageParseModeHTML,
+		Text:      utils.WrapForMarkdownWorse(text),
+		ParseMode: params.MessageParseModeMarkdown,
 	})
 	if err != nil || r == nil {
 		log.Printf("Error sending message: %s", err)
@@ -117,7 +142,7 @@ func sendError(message *entities.Message) {
 }
 
 func appendTimestamp(obtained *time.Time) string {
-	return fmt.Sprintf("\n\nServer time: <b>%s</b>\nData time: <b>%s</b>\nNext update: <b>%s</b>",
+	return fmt.Sprintf("\n*%s* | Server Time\n*%s* | Data Time\n*%s* | Next Update",
 		time.Now().Format("15:04:05.000"),
 		obtained.Format("15:04:05.000"),
 		global.NextUpdate.Format("15:04:05.000"),
