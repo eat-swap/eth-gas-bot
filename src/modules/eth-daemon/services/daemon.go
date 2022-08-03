@@ -1,20 +1,29 @@
 package services
 
 import (
+	"eth-gas-bot/config"
 	"eth-gas-bot/modules/eth-daemon/global"
 	"eth-gas-bot/modules/eth-daemon/models"
 	"eth-gas-bot/modules/etherscan/services"
+	"eth-gas-bot/modules/telegram/models/params"
+	TelegramServices "eth-gas-bot/modules/telegram/services"
+	"eth-gas-bot/utils"
+	"fmt"
 	"log"
 	"time"
 )
 
 func Daemon() {
+	defer Daemon()
+	gas()
+	price()
 	for {
+		time.Sleep(global.RefreshInterval)
 		go gas()
 		go price()
 		global.NextUpdate = time.Now().Add(global.RefreshInterval)
 		log.Printf("Next scheduled update at %s", global.NextUpdate.Format(time.RFC1123))
-		time.Sleep(global.RefreshInterval)
+		go monitor()
 	}
 }
 
@@ -136,4 +145,41 @@ func price() {
 
 	// Print price info
 	log.Printf("Successfully obtained price info. Price: %.3f", price.Usd)
+}
+
+const (
+	LowFeeThreshold = 0.3
+)
+
+var (
+	previousLowFee = -LowFeeThreshold
+)
+
+func monitor() {
+	gas := global.GetCurrentGas().Gas
+	price := global.GetCurrentPrice().Price.Usd
+
+	// Transfer ETH
+	currentPrice := float64(gas.SafeGasPrice) * price * 1e-9 * 21000
+
+	if (currentPrice-LowFeeThreshold)*previousLowFee >= 0 {
+		return
+	}
+
+	var text string
+	if currentPrice <= LowFeeThreshold {
+		text = fmt.Sprintf("✅ Transferring price <= $%.3f, current *$%.3f*", LowFeeThreshold, currentPrice)
+	} else {
+		text = fmt.Sprintf("❌ Transferring price > $%.3f, current *$%.3f*", LowFeeThreshold, currentPrice)
+	}
+	previousLowFee = currentPrice - LowFeeThreshold
+	_, err := TelegramServices.SendMessage(config.TelegramBotToken, &params.SendMessageParams{
+		ChatId:           0,
+		Text:             utils.WrapForMarkdownWorse(text),
+		ParseMode:        params.MessageParseModeMarkdown,
+		ProtectedContent: true,
+	})
+	if err != nil {
+		log.Printf("Cannot send monitor message: %s", err.Error())
+	}
 }
